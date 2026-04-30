@@ -13,23 +13,27 @@ node {
     }
 
     stage('Deploy to EC2'){
-        sh """
-            mkdir -p ${appDir}
+    retry(2) {
+        timeout(time: 15, unit: 'MINUTES') {
+            sh """
+                mkdir -p ${appDir}
 
-            rsync -av --delete --exclude='.git' --exclude='node_modules' ./ ${appDir}
+                rsync -av --delete --exclude='.git' --exclude='node_modules' ./ ${appDir}
 
-            cd ${appDir}
+                cd ${appDir}
 
-            npm config set fetch-timeout 600000
-            npm config set fetch-retries 5
+                npm config set fetch-timeout 600000
+                npm config set fetch-retries 5
 
-            npm ci --no-audit --prefer-offline
+                npm ci --no-audit --prefer-offline
 
-            npm run build
+                npm run build
 
-            fuser -k 3000/tcp || true
+                fuser -k 3000/tcp || true
 
-            nohup npm run start > app.log 2>&1 &
-        """
+                nohup npm run start > app.log 2>&1 &
+            """
+        }
     }
+}
 }
